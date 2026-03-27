@@ -21,50 +21,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
-// --- Dashboard Component ---
-function Dashboard({ onLogout }: { onLogout: () => void }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-surface-lowest rounded-2xl shadow-card p-8 md:p-12 w-full flex flex-col items-center text-center"
-    >
-      <div className="bg-success/10 p-4 rounded-full mb-6 relative">
-        <CheckCircle2 className="text-success" size={48} />
-      </div>
-      <h1 className="font-headline text-3xl font-extrabold text-primary mb-2">
-        Dashboard Locked & Secured
-      </h1>
-      <p className="text-on-surface-variant mb-8 text-sm max-w-sm">
-        You have successfully cleared the secure authentication gateway and accessed your private vault.
-      </p>
-      
-      <div className="w-full bg-surface-low rounded-xl p-6 border border-outline-variant/20 mb-8 max-w-sm text-left shadow-inner">
-        <p className="text-xs font-bold text-outline-variant uppercase tracking-widest mb-4">Security Status</p>
-        <div className="flex items-center justify-between text-sm py-2 border-b border-outline-variant/10">
-          <span className="text-primary font-bold">Network Connection</span>
-          <span className="text-success font-bold flex items-center gap-2">
-             <div className="w-2 h-2 rounded-full bg-success"></div> Secured
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm py-2">
-          <span className="text-primary font-bold">Auth Method</span>
-          <span className="text-accent-gold font-bold">Verified</span>
-        </div>
-      </div>
-
-      <motion.button 
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onLogout}
-        className="flex items-center gap-2 py-3 px-6 bg-error/10 text-error font-bold rounded-xl hover:bg-error/20 transition-all font-headline tracking-wide"
-      >
-        <LogOut size={18} />
-        Sign Out Securely
-      </motion.button>
-    </motion.div>
-  );
-}
+import SecurityDashboard from './components/SecurityDashboard';
 
 // --- Main App ---
 export default function App() {
@@ -237,27 +194,7 @@ export default function App() {
   };
 
   if (isLoggedIn) {
-     window.location.href = `http://localhost:3001?access_token=${sessionToken}`;
-     return (
-       <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-background">
-         {/* Decorative Watermarks */}
-         <div className="absolute -top-48 -left-48 opacity-[0.02] pointer-events-none">
-           <Shield size={600} />
-         </div>
-         <main className="w-full max-w-xl z-10 flex flex-col items-center text-center">
-           <div className="bg-surface-lowest rounded-2xl shadow-card p-8 md:p-12 w-full">
-              <div className="flex justify-center mb-6">
-                <div className="bg-success/10 p-4 rounded-full">
-                  <CheckCircle2 className="text-success" size={48} />
-                </div>
-              </div>
-              <h1 className="font-headline text-2xl font-bold text-primary mb-4">Authentication Successful</h1>
-              <p className="text-on-surface-variant">Redirecting you to the MaxAuth Security Dashboard...</p>
-              <p className="text-xs text-outline mt-4">If nothing happens, ensure the dashboard is running and navigate to <a href="http://localhost:3001" className="text-primary underline">http://localhost:3001</a></p>
-           </div>
-         </main>
-       </div>
-     );
+     return <SecurityDashboard onLogout={() => setIsLoggedIn(false)} />;
   }
 
   return (
