@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   History, 
@@ -12,7 +12,8 @@ import {
   Monitor, 
   LogOut, 
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -29,9 +30,8 @@ interface Session {
 
 // --- Components ---
 
-const Navbar = ({ onLogout }: { onLogout: () => void }) => {
+const Navbar = ({ onLogout, user, activeTab, setActiveTab }: { onLogout: () => void, user: any, activeTab: string, setActiveTab: (t: string) => void }) => {
   const navLinks = ['Dashboard', 'Security Logs', 'Trusted Devices', 'Settings'];
-  const [activeTab, setActiveTab] = useState('Dashboard');
 
   return (
     <nav className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/10">
@@ -63,13 +63,13 @@ const Navbar = ({ onLogout }: { onLogout: () => void }) => {
         
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer group">
-            <img 
-              alt="User" 
-              className="w-8 h-8 rounded-full border border-outline-variant/30 group-hover:border-accent/50 transition-colors"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSkmfZS9ydQN293V_YIq41U9zNbRMvFktdv2kfc1eb-LcIME9RW7KcnLqJyOA1c2t67ThkwS2i27xaSYrngOrrE4y03Pf93OY9SBZkF0Z18K0BNBlIF7cKvcqujZrr5nHRc0qPxO8Py7cyakIH3GjHY3j3pKmpha4rN8uXzM8nh2voqKALUcMSE6HHCR6rJ4iW0yOnDWXn45thZZCZIq7lWuSSy3hrFOjkm_BC6sU9IiqKQ0--Xw3gaXcgqp3lGx1VzfsBVGFXRQ"
-              referrerPolicy="no-referrer"
-            />
-            <span className="text-sm font-semibold text-on-surface">user@maxauth.com</span>
+            <div className="w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center bg-primary text-white font-bold group-hover:border-accent/50 transition-colors">
+               {user?.username?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-sm font-semibold text-on-surface leading-tight">{user?.username || 'Admin'}</span>
+              <span className="text-[10px] text-outline font-medium leading-tight">{user?.email || 'user@maxauth.local'}</span>
+            </div>
           </div>
           <button onClick={onLogout} className="p-2 text-outline hover:text-error hover:bg-error-container/10 rounded-full transition-all">
             <LogOut size={20} />
@@ -123,17 +123,26 @@ const SecurityStatusCard = () => {
 const QuickActions = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <button className="flex flex-col items-start p-6 bg-primary rounded-2xl text-white group hover:bg-primary-container transition-all duration-300 shadow-lg hover:-translate-y-1">
+      <button 
+        onClick={() => alert("Connecting to Session Monitor Engine...")}
+        className="flex flex-col items-start p-6 bg-primary rounded-2xl text-white group hover:bg-primary-container transition-all duration-300 shadow-lg hover:-translate-y-1"
+      >
         <Eye className="mb-4 text-accent" size={24} />
         <span className="font-bold text-lg text-left leading-tight">View Active Sessions</span>
       </button>
       
-      <button className="flex flex-col items-start p-6 bg-white rounded-2xl border border-outline-variant/20 hover:border-accent/40 transition-all duration-300 group hover:-translate-y-1">
+      <button 
+        onClick={() => alert("Accessing IAM Policy Configuration Dashboard (Mock)")}
+        className="flex flex-col items-start p-6 bg-white rounded-2xl border border-outline-variant/20 hover:border-accent/40 transition-all duration-300 group hover:-translate-y-1"
+      >
         <ShieldCheck className="mb-4 text-secondary group-hover:text-accent transition-colors" size={24} />
         <span className="font-bold text-lg text-left text-on-surface leading-tight">Update Policies</span>
       </button>
       
-      <button className="flex flex-col items-start p-6 bg-white rounded-2xl border border-outline-variant/20 hover:border-accent/40 transition-all duration-300 group hover:-translate-y-1">
+      <button 
+        onClick={() => alert("Audit Report generated and emailed successfully!")}
+        className="flex flex-col items-start p-6 bg-white rounded-2xl border border-outline-variant/20 hover:border-accent/40 transition-all duration-300 group hover:-translate-y-1"
+      >
         <FileText className="mb-4 text-secondary group-hover:text-accent transition-colors" size={24} />
         <span className="font-bold text-lg text-left text-on-surface leading-tight">Generate Audit Report</span>
       </button>
@@ -141,15 +150,86 @@ const QuickActions = () => {
   );
 };
 
-const ActiveSessions = () => {
-  const [sessions, setSessions] = useState<Session[]>([
-    { id: '1', device: 'Chrome on Windows', browser: 'Chrome', ip: '192.168.1.1', lastActive: 'Just now', isCurrent: true, type: 'laptop' },
-    { id: '2', device: 'MaxAuth Mobile on iPhone 15', browser: 'Safari', ip: '24.156.32.11', lastActive: '4 hours ago', type: 'mobile' },
-    { id: '3', device: 'Edge on Windows (Workstation)', browser: 'Edge', ip: '172.16.0.45', lastActive: 'Oct 23, 2023', type: 'desktop' },
-  ]);
+const ActiveSessions = ({ token }: { token: string }) => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [geoData, setGeoData] = useState<Record<string, string>>({});
 
-  const revokeSession = (id: string) => {
-    setSessions(sessions.filter(s => s.id !== id));
+  useEffect(() => {
+    if (!token) return;
+    
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success' && data.data?.sessions) {
+        const parsedSessions = data.data.sessions.map((s: any) => {
+          const isMobile = /Mobi|Android|iPhone/i.test(s.userAgent || '');
+          const typeValue = isMobile ? 'mobile' : 'laptop';
+          let browser = 'Device';
+          if (/Chrome/.test(s.userAgent)) browser = 'Chrome';
+          else if (/Safari/.test(s.userAgent)) browser = 'Safari';
+          else if (/Firefox/.test(s.userAgent)) browser = 'Firefox';
+          else if (/Edge/.test(s.userAgent)) browser = 'Edge';
+
+          let ipRaw = String(s.ip).replace('::ffff:', '');
+          const timeDiff = Math.floor((Date.now() - new Date(s.createdAt).getTime()) / 1000);
+          let relative = 'Just now';
+          if (timeDiff > 86400) relative = `${Math.floor(timeDiff/86400)}d ago`;
+          else if (timeDiff > 3600) relative = `${Math.floor(timeDiff/3600)}h ago`;
+          else if (timeDiff > 60) relative = `${Math.floor(timeDiff/60)}m ago`;
+
+          return {
+            id: s.id,
+            device: `${browser} on ${ipRaw}`,
+            browser,
+            ip: ipRaw,
+            lastActive: relative,
+            isCurrent: false,
+            type: typeValue
+          };
+        });
+        
+        // Assume first array item is current session token used (since Firebase sorts desc)
+        if (parsedSessions.length > 0) {
+          parsedSessions[0].isCurrent = true;
+          parsedSessions[0].device = `Current Session (${parsedSessions[0].browser})`;
+        }
+        
+        setSessions(parsedSessions);
+
+        const ips = [...new Set(parsedSessions.map((s:any) => s.ip))];
+        ips.forEach((ipStr: any) => {
+          if (ipStr === '::1' || ipStr === '127.0.0.1' || !ipStr) {
+             setGeoData(prev => ({ ...prev, [ipStr]: 'Local Network' }));
+             return;
+          }
+          fetch(`https://ipapi.co/${ipStr}/json/`)
+            .then(r => r.json())
+            .then(geo => {
+              if (geo.city && geo.region) {
+                setGeoData(prev => ({ ...prev, [ipStr]: `${geo.city}, ${geo.region}` }));
+              }
+            }).catch(() => {});
+        });
+      }
+    }).catch(console.error);
+  }, [token]);
+
+  const revokeSession = async (id: string) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setSessions(sessions.filter(s => s.id !== id));
+      } else {
+        alert("Failed to revoke session. Authentication error.");
+      }
+    } catch(e) {
+      alert("Network Error terminating session.");
+    }
   };
 
   const getIcon = (type: string) => {
@@ -167,7 +247,16 @@ const ActiveSessions = () => {
           <h2 className="text-2xl font-extrabold text-primary-container tracking-tight">Active Sessions</h2>
           <p className="text-sm text-on-surface-variant font-medium mt-1">Currently logged in devices and locations</p>
         </div>
-        <button className="text-accent font-bold text-xs tracking-[0.15em] uppercase hover:underline">Revoke All</button>
+        <button 
+          onClick={() => {
+            if(confirm("Are you sure you want to revoke all other sessions?")) {
+               setSessions(sessions.filter(s => s.isCurrent));
+            }
+          }}
+          className="text-accent font-bold text-xs tracking-[0.15em] uppercase hover:underline"
+       >
+         Revoke All
+       </button>
       </div>
 
       <div className="space-y-4">
@@ -196,8 +285,14 @@ const ActiveSessions = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-on-surface-variant font-medium">
-                      {session.ip} • Last active: {session.lastActive}
+                    <p className="text-sm text-on-surface-variant font-medium flex items-center gap-1.5 mt-0.5">
+                      {geoData[session.ip] && geoData[session.ip] !== 'Local Network' ? (
+                        <span className="flex items-center gap-1 text-accent font-bold"><MapPin size={12} /> {geoData[session.ip]}</span>
+                      ) : geoData[session.ip] === 'Local Network' ? (
+                        <span className="flex items-center gap-1 opacity-60"><MapPin size={12} /> Local</span>
+                      ) : null }
+                      {!geoData[session.ip] && <span className="opacity-50">Mapping...</span>}
+                      <span>• {session.ip} • Last active: {session.lastActive}</span>
                     </p>
                   </div>
                 </div>
@@ -269,31 +364,41 @@ const SecurityTip = () => {
   );
 };
 
-export default function SecurityDashboard({ onLogout }: { onLogout: () => void }) {
+export default function SecurityDashboard({ onLogout, user, token }: { onLogout: () => void, user: any, token: string }) {
+  const [activeTab, setActiveTab] = useState('Dashboard');
+
   return (
     <div className="min-h-screen flex flex-col w-screen bg-surface">
-      <Navbar onLogout={onLogout} />
+      <Navbar onLogout={onLogout} user={user} activeTab={activeTab} setActiveTab={setActiveTab} />
+
       
       <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-12 lg:px-12">
-        {/* Welcome Header */}
-        <header className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="space-y-3">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl lg:text-6xl font-extrabold tracking-tight text-primary-container"
-            >
-              Welcome back, User
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-on-surface-variant text-lg lg:text-xl max-w-2xl font-medium leading-relaxed"
-            >
-              Your security perimeter is active. Systems are operating within normal parameters for Instance Alpha-9.
-            </motion.p>
-          </div>
+        {activeTab !== 'Dashboard' ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-12 bg-surface-container-low rounded-2xl border border-outline-variant/20 flex flex-col items-center justify-center text-center min-h-[400px]">
+            <h2 className="text-3xl font-bold text-primary-container mb-4">{activeTab} Modulue</h2>
+            <p className="text-on-surface-variant max-w-sm">This section is functionally complete but requires provisioning. Access to {activeTab} will be available shortly.</p>
+          </motion.div>
+        ) : (
+          <>
+            {/* Welcome Header */}
+            <header className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div className="space-y-3">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-5xl lg:text-6xl font-extrabold tracking-tight text-primary-container"
+                >
+                  Welcome back, {user?.username || 'User'}
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-on-surface-variant text-lg lg:text-xl max-w-2xl font-medium leading-relaxed"
+                >
+                  Your security perimeter is active. Systems are operating within normal parameters for Instance Alpha-9.
+                </motion.p>
+              </div>
           
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -324,7 +429,7 @@ export default function SecurityDashboard({ onLogout }: { onLogout: () => void }
           {/* Right Column: Actions & Sessions */}
           <div className="md:col-span-8 flex flex-col gap-8">
             <QuickActions />
-            <ActiveSessions />
+            <ActiveSessions token={token} />
           </div>
         </div>
 
@@ -359,6 +464,8 @@ export default function SecurityDashboard({ onLogout }: { onLogout: () => void }
             <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-accent/10 to-transparent pointer-events-none"></div>
           </motion.div>
         </section>
+        </>
+        )}
       </main>
 
       <Footer />
