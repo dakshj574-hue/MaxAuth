@@ -1,8 +1,10 @@
 node_modules/
-build/
 dist/
-coverage/
-.DS_Store
-*.log
-.env*
+build/
+.env
+.env.*
 !.env.example
+serviceAccountKey.json
+npm-debug.log
+yarn-error.log
+.DS_Store

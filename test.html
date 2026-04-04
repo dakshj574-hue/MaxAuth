@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaxAuth Test Suite</title>
+  <!-- Modern Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --primary: #2f81f7;
+      --primary-hover: #1f6feb;
+      --danger: #f85149;
+      --success: #2ea043;
+      --radius: 12px;
+      --transition: 0.2s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .global-config {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 40px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.2);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    button {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #21262d;
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
+    .response-box {
+      margin-top: 20px;
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      color: #e6edf3;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 400px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .response-box.show {
+      display: block;
+    }
+
+    .response-box.error {
+      border-color: rgba(248, 81, 73, 0.4);
+      color: #ff7b72;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .note {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 25px 0;
+    }
+
+    #recaptcha-container {
+      margin: 15px 0;
+    }
+  </style>
+
+  <!-- Firebase SDKs via CDN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    window.initializeApp = initializeApp;
+    window.getAuth = getAuth;
+    window.RecaptchaVerifier = RecaptchaVerifier;
+    window.signInWithPhoneNumber = signInWithPhoneNumber;
+  </script>
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <h1>MaxAuth Flows Test</h1>
+      <p class="subtitle">Vanilla DOM interface to test all authentication methods</p>
+    </header>
+
+    <!-- Global Config -->
+    <div class="global-config">
+      <div style="flex: 1; min-width: 250px;">
+        <label>Backend URL</label>
+        <input type="text" id="g-url" value="http://localhost:5000">
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <label>x-api-key</label>
+        <input type="text" id="g-apikey" value="mxa_4e61b581ebade06fa7980ba67b2ea6303ac0894893a05ecb5c21a07c56bc57f0">
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <label>Active Access Token (For Auth Routes)</label>
+        <input type="text" id="g-token" placeholder="Bearer will be placed automatically">
+      </div>
+    </div>
+
+    <!-- SECTION 1: Magic Link -->
+    <div class="card" id="s-magic">
+      <div class="card-header">
+        <h2 class="card-title">1. Magic Link</h2>
+      </div>
+      <div class="form-cols">
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="m-email" placeholder="user@example.com">
+        </div>
+        <div class="btn-row">
+          <button onclick="requestMagicLink()" id="btn-m-send">
+            <div class="spinner"></div> Send Magic Link
+          </button>
+        </div>
+        <p class="note">Check your console/email for the token link, then paste the token below.</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-cols">
+        <div class="input-group">
+          <label>Magic Link Token</label>
+          <input type="text" id="m-token" placeholder="Paste token here...">
+        </div>
+        <div class="btn-row">
+          <button onclick="verifyMagicLink()" class="btn-secondary" id="btn-m-verify">
+            <div class="spinner"></div> Verify Token
+          </button>
+        </div>
+      </div>
+      <div class="response-box" id="res-magic"></div>
+    </div>
+
+    <!-- SECTION 2: Email OTP -->
+    <div class="card" id="s-emailotp">
+      <div class="card-header">
+        <h2 class="card-title">2. Email OTP</h2>
+      </div>
+      <div class="form-cols">
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="eo-email" placeholder="user@example.com">
+        </div>
+        <div class="btn-row">
+          <button onclick="sendEmailOTP()" id="btn-eo-send">
+            <div class="spinner"></div> Send OTP
+          </button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-cols">
+        <div class="input-group">
+          <label>OTP Code</label>
+          <input type="text" id="eo-code" placeholder="123456">
+        </div>
+        <div class="btn-row">
+          <button onclick="verifyEmailOTP()" class="btn-secondary" id="btn-eo-verify">
+            <div class="spinner"></div> Verify OTP
+          </button>
+        </div>
+      </div>
+      <div class="response-box" id="res-eotp"></div>
+    </div>
+
+    <!-- SECTION 3: Firebase Phone OTP -->
+    <div class="card" id="s-phoneotp">
+      <div class="card-header">
+        <h2 class="card-title">3. Phone OTP (Firebase)</h2>
+      </div>
+
+      <div
+        style="background: rgba(47, 129, 247, 0.1); border: 1px solid rgba(47,129,247,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <h4 style="margin-bottom: 10px; color: #2f81f7;">Firebase Config</h4>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="fb-apikey" placeholder="apiKey" style="flex: 1;">
+          <input type="text" id="fb-domain" placeholder="authDomain" style="flex: 1;">
+          <input type="text" id="fb-project" placeholder="projectId" style="flex: 1;">
+        </div>
+        <button onclick="initFirebase()" class="btn-secondary"
+          style="margin-top: 10px; padding: 6px 12px; font-size: 0.9em;">Initialize Firebase</button>
+        <span id="fb-status" style="margin-left: 10px; font-size: 0.9em; color: var(--text-muted)"></span>
+      </div>
+
+      <div class="form-cols">
+        <div class="input-group">
+          <label>Phone Number</label>
+          <input type="text" id="po-phone" placeholder="+1234567890">
+        </div>
+        <div id="recaptcha-container"></div>
+        <div class="btn-row">
+          <button onclick="sendPhoneOTP()" id="btn-po-send">
+            <div class="spinner"></div> Send SMS OTP
+          </button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-cols">
+        <div class="input-group">
+          <label>SMS Code</label>
+          <input type="text" id="po-code" placeholder="123456">
+        </div>
+        <div class="btn-row">
+          <button onclick="verifyPhoneOTP()" class="btn-secondary" id="btn-po-verify">
+            <div class="spinner"></div> Verify SMS & Authenticate Backend
+          </button>
+        </div>
+      </div>
+      <div class="response-box" id="res-potp"></div>
+    </div>
+
+    <!-- SECTION 4: WebAuthn Passkey -->
+    <div class="card" id="s-passkey">
+      <div class="card-header">
+        <h2 class="card-title">4. WebAuthn Passkey</h2>
+        <p class="note">Note: Must be logged in (Active Access Token set above) to register a Passkey.</p>
+      </div>
+      <div class="form-cols">
+        <div class="input-group">
+          <label>Email / Username (For Login)</label>
+          <input type="text" id="pk-email" placeholder="user@example.com">
+        </div>
+
+        <div class="btn-row">
+          <button onclick="registerPasskey()" id="btn-pk-reg">
+            <div class="spinner"></div> Register Passkey
+          </button>
+          <button onclick="loginPasskey()" class="btn-secondary" id="btn-pk-log">
+            <div class="spinner"></div> Login via Passkey
+          </button>
+        </div>
+      </div>
+      <div class="response-box" id="res-pk"></div>
+    </div>
+    <!-- SECTION 5: MFA Verification -->
+    <div class="card" id="s-mfa">
+      <div class="card-header">
+        <h2 class="card-title">5. MFA Challenge</h2>
+        <p class="note">Run a login above (Magic Link, OTP, or Passkey) for an MFA-enabled project to get an `mfaToken`.</p>
+      </div>
+      <div class="form-cols">
+        <div class="input-group">
+          <label>MFA Token</label>
+          <input type="text" id="mfa-token" placeholder="Paste mfaToken here...">
+        </div>
+        <div class="btn-row">
+          <button onclick="requestMfaChallenge()" id="btn-mfa-req">
+            <div class="spinner"></div> Request Challenge (Send OTP)
+          </button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-cols">
+        <div class="input-group">
+          <label>MFA Code</label>
+          <input type="text" id="mfa-code" placeholder="123456">
+        </div>
+        <div class="btn-row">
+          <button onclick="verifyMfaChallenge()" class="btn-secondary" id="btn-mfa-verify">
+            <div class="spinner"></div> Verify MFA Code
+          </button>
+        </div>
+      </div>
+      <div class="response-box" id="res-mfa"></div>
+    </div>
+  </div>
+
+  <script>
+    // ─── UTILS ────────────────────────────────────────────────────────────────
+    const getBaseUrl = () => document.getElementById('g-url').value;
+    const getHeaders = (auth = false) => {
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': document.getElementById('g-apikey').value
+      };
+      if (auth) {
+        const token = document.getElementById('g-token').value;
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    };
+
+    const showLoader = (btnId) => {
+      const btn = document.getElementById(btnId);
+      btn.disabled = true;
+      btn.querySelector('.spinner').style.display = 'block';
+    }
+    const hideLoader = (btnId) => {
+      const btn = document.getElementById(btnId);
+      btn.disabled = false;
+      btn.querySelector('.spinner').style.display = 'none';
+    }
+
+    const renderRes = (boxId, data, isError = false) => {
+      const box = document.getElementById(boxId);
+      box.className = `response-box show ${isError ? 'error' : ''}`;
+      box.textContent = JSON.stringify(data, null, 2);
+
+      // Auto-update global token if present
+      if (data?.data?.accessToken) {
+        document.getElementById('g-token').value = data.data.accessToken;
+      }
+    };
+
+    // Base64Url Helpers for WebAuthn
+    const bufferToBase64url = (buffer) => {
+      const bytes = new Uint8Array(buffer);
+      let str = '';
+      for (let charCode of bytes) str += String.fromCharCode(charCode);
+      return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    };
+    const base64urlToBuffer = (base64url) => {
+      const padding = '='.repeat((4 - base64url.length % 4) % 4);
+      const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray.buffer;
+    };
+
+    // ─── 1. MAGIC LINK ────────────────────────────────────────────────────────
+    async function requestMagicLink() {
+      showLoader('btn-m-send');
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/magic/send`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ email: document.getElementById('m-email').value })
+        });
+        const data = await res.json();
+        renderRes('res-magic', data, !res.ok);
+      } catch (err) { renderRes('res-magic', err.toString(), true); }
+      hideLoader('btn-m-send');
+    }
+
+    async function verifyMagicLink() {
+      showLoader('btn-m-verify');
+      try {
+        const token = document.getElementById('m-token').value;
+        // In current backend, verify-magiclink might be POST inside magiclink or GET? 
+        // User prompt: Button to call GET /api/magic/verify?token=TOKEN
+        const res = await fetch(`${getBaseUrl()}/api/magic/verify?token=${token}`, {
+          method: 'GET',
+          headers: getHeaders()
+        });
+        const data = await res.json();
+        renderRes('res-magic', data, !res.ok);
+      } catch (err) { renderRes('res-magic', err.toString(), true); }
+      hideLoader('btn-m-verify');
+    }
+
+    // ─── 2. EMAIL OTP ─────────────────────────────────────────────────────────
+    async function sendEmailOTP() {
+      showLoader('btn-eo-send');
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/otp/send`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ email: document.getElementById('eo-email').value })
+        });
+        const data = await res.json();
+        renderRes('res-eotp', data, !res.ok);
+      } catch (err) { renderRes('res-eotp', err.toString(), true); }
+      hideLoader('btn-eo-send');
+    }
+
+    async function verifyEmailOTP() {
+      showLoader('btn-eo-verify');
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/otp/verify`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            email: document.getElementById('eo-email').value,
+            code: document.getElementById('eo-code').value
+          })
+        });
+        const data = await res.json();
+        renderRes('res-eotp', data, !res.ok);
+      } catch (err) { renderRes('res-eotp', err.toString(), true); }
+      hideLoader('btn-eo-verify');
+    }
+
+    // ─── 3. PHONE OTP (FIREBASE) ──────────────────────────────────────────────
+    let firebaseAuthInstance = null;
+    let phoneConfirmationResult = null;
+    let recaptchaVerifier = null;
+
+    function initFirebase() {
+      const apiKey = document.getElementById('fb-apikey').value;
+      const authDomain = document.getElementById('fb-domain').value;
+      const projectId = document.getElementById('fb-project').value;
+
+      if (!apiKey || !projectId) {
+        document.getElementById('fb-status').textContent = 'Please fill config';
+        return;
+      }
+
+      const app = window.initializeApp({ apiKey, authDomain, projectId });
+      firebaseAuthInstance = window.getAuth(app);
+      recaptchaVerifier = new window.RecaptchaVerifier(firebaseAuthInstance, 'recaptcha-container', {
+        'size': 'normal'
+      });
+
+      document.getElementById('fb-status').textContent = 'Initialized!';
+      document.getElementById('fb-status').style.color = 'var(--success)';
+    }
+
+    async function sendPhoneOTP() {
+      if (!firebaseAuthInstance) { alert("Init Firebase first!"); return; }
+      showLoader('btn-po-send');
+      try {
+        const phone = document.getElementById('po-phone').value;
+        phoneConfirmationResult = await window.signInWithPhoneNumber(firebaseAuthInstance, phone, recaptchaVerifier);
+        renderRes('res-potp', { success: true, message: "SMS Sent. Enter code to confirm." });
+      } catch (err) { renderRes('res-potp', err.toString(), true); }
+      hideLoader('btn-po-send');
+    }
+
+    async function verifyPhoneOTP() {
+      if (!phoneConfirmationResult) { alert("Send SMS first!"); return; }
+      showLoader('btn-po-verify');
+      try {
+        const code = document.getElementById('po-code').value;
+        // 1. Confirm code with Firebase UI
+        const userCredential = await phoneConfirmationResult.confirm(code);
+        // 2. Get ID Token
+        const idToken = await userCredential.user.getIdToken();
+        // 3. Send to MaxAuth Backend
+        const res = await fetch(`${getBaseUrl()}/api/otp/verify-phone`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ idToken })
+        });
+        const data = await res.json();
+        renderRes('res-potp', { _firebase_token_retrieved: true, ...data }, !res.ok);
+      } catch (err) { renderRes('res-potp', err.toString(), true); }
+      hideLoader('btn-po-verify');
+    }
+
+    // ─── 4. WEBAUTHN PASSKEY ──────────────────────────────────────────────────
+    async function registerPasskey() {
+      showLoader('btn-pk-reg');
+      const boxId = 'res-pk';
+      try {
+        // 1. Start Register (backend provides options)
+        const startRes = await fetch(`${getBaseUrl()}/api/passkey/register/start`, {
+          method: 'POST',
+          headers: getHeaders(true) // Requires Active Token
+        });
+        const optionsRes = await startRes.json();
+        if (!startRes.ok) throw new Error(JSON.stringify(optionsRes));
+
+        const options = optionsRes.data.options;
+
+        // Unpack base64url options to Arrays
+        options.user.id = base64urlToBuffer(options.user.id);
+        options.challenge = base64urlToBuffer(options.challenge);
+        if (options.excludeCredentials) {
+          options.excludeCredentials.forEach(c => c.id = base64urlToBuffer(c.id));
+        }
+
+        // 2. Browser interacts with Authenticator
+        const credential = await navigator.credentials.create({ publicKey: options });
+
+        // 3. Pack credential reply back to Base64url to send to the server
+        const attestationResponse = {
+          id: credential.id,
+          rawId: bufferToBase64url(credential.rawId),
+          type: credential.type,
+          response: {
+            clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+            attestationObject: bufferToBase64url(credential.response.attestationObject),
+          }
+        };
+
+        // 4. Finish Registration
+        const finRes = await fetch(`${getBaseUrl()}/api/passkey/register/finish`, {
+          method: 'POST',
+          headers: getHeaders(true),
+          body: JSON.stringify(attestationResponse)
+        });
+        const finData = await finRes.json();
+        renderRes(boxId, finData, !finRes.ok);
+      } catch (err) { renderRes(boxId, err.toString(), true); }
+      hideLoader('btn-pk-reg');
+    }
+
+    async function loginPasskey() {
+      showLoader('btn-pk-log');
+      const boxId = 'res-pk';
+      try {
+        const email = document.getElementById('pk-email').value;
+
+        // 1. Start Login (backend provides challenge)
+        const startRes = await fetch(`${getBaseUrl()}/api/passkey/login/start`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ email })
+        });
+        const optionsRes = await startRes.json();
+        if (!startRes.ok) throw new Error(JSON.stringify(optionsRes));
+
+        const options = optionsRes.data.options;
+        options.challenge = base64urlToBuffer(options.challenge);
+        if (options.allowCredentials) {
+          options.allowCredentials.forEach(c => c.id = base64urlToBuffer(c.id));
+        }
+
+        // 2. Browser fetches signature from Authenticator
+        const credential = await navigator.credentials.get({ publicKey: options });
+
+        // 3. Format response for server
+        const assertionResponse = {
+          id: credential.id,
+          rawId: bufferToBase64url(credential.rawId),
+          type: credential.type,
+          response: {
+            authenticatorData: bufferToBase64url(credential.response.authenticatorData),
+            clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+            signature: bufferToBase64url(credential.response.signature),
+            userHandle: credential.response.userHandle ? bufferToBase64url(credential.response.userHandle) : undefined
+          }
+        };
+
+        // 4. Finish Login
+        const finRes = await fetch(`${getBaseUrl()}/api/passkey/login/finish`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ email, assertion: assertionResponse })
+        });
+        const finData = await finRes.json();
+        renderRes(boxId, finData, !finRes.ok);
+      } catch (err) { renderRes(boxId, err.toString(), true); }
+      hideLoader('btn-pk-log');
+    }
+    // ─── 5. MFA ───────────────────────────────────────────────────────────────
+    async function requestMfaChallenge() {
+      showLoader('btn-mfa-req');
+      try {
+        const mfaToken = document.getElementById('mfa-token').value;
+        const res = await fetch(`${getBaseUrl()}/api/mfa/challenge`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ mfaToken })
+        });
+        const data = await res.json();
+        renderRes('res-mfa', data, !res.ok);
+      } catch (err) { renderRes('res-mfa', err.toString(), true); }
+      hideLoader('btn-mfa-req');
+    }
+
+    async function verifyMfaChallenge() {
+      showLoader('btn-mfa-verify');
+      try {
+        const mfaToken = document.getElementById('mfa-token').value;
+        const code = document.getElementById('mfa-code').value;
+        const res = await fetch(`${getBaseUrl()}/api/mfa/verify`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ mfaToken, code })
+        });
+        const data = await res.json();
+        renderRes('res-mfa', data, !res.ok);
+      } catch (err) { renderRes('res-mfa', err.toString(), true); }
+      hideLoader('btn-mfa-verify');
+    }
+  </script>
+
+</body>
+
+</html>
