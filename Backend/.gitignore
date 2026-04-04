@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+serviceAccountKey.json
+npm-debug.log
+yarn-error.log
+dist/
+coverage/
+.DS_Store

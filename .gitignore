@@ -1,0 +1,21 @@
+# Global Monorepo ignores
+node_modules/
+.env
+.env.*
+!.env.example
+serviceAccountKey.json
+
+# Builds
+dist/
+build/
+.next/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
