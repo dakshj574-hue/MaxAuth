@@ -97,7 +97,5 @@ All endpoints except `/api/projects/register` require an `x-api-key` header.
 - CORS restricted to allowed origins only
 
 ## Notes
-
-- `.env` and `serviceAccountKey.json` are in `.gitignore` and never committed
 - Phone OTP requires Y developer to set up their own Firebase project
 - MFA can be toggled on/off per project from the admin dashboard
