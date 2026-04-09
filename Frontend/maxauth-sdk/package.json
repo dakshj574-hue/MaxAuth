@@ -1,17 +1,34 @@
 {
   "name": "maxauth-sdk",
   "version": "1.0.0",
-  "description": "JavaScript SDK for MaxAuth",
+  "description": "JavaScript SDK for MaxAuth — open source multi-tenant authentication platform",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
+    "authentication",
     "auth",
     "maxauth",
-    "security"
+    "magic-link",
+    "otp",
+    "passkey",
+    "webauthn",
+    "mfa",
+    "multi-tenant",
+    "passwordless",
+    "firebase",
+    "jwt"
   ],
-  "author": "",
-  "license": "ISC"
+  "author": "Daksh Jain",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dakshj574-hue/MaxAuth"
+  },
+  "homepage": "https://github.com/dakshj574-hue/MaxAuth#readme",
+  "bugs": {
+    "url": "https://github.com/dakshj574-hue/MaxAuth/issues"
+  }
 }
