@@ -5,16 +5,18 @@
  *
  * Enforces NIST SP 800-63B account lockout after 4 failed attempts.
  */
-
 import { findLoginAttemptByEmail } from '../models/loginAttempt.model.js'
 import { errorResponse } from '../utils/apiResponse.js'
 
 export const checkLoginAttempts = async (req, res, next) => {
   try {
     const { email } = req.body
+    const projectId = req.project?.id
+
     if (!email) return next()
 
-    const attempt = await findLoginAttemptByEmail(email)
+    // pass projectId so lockout is scoped per tenant
+    const attempt = await findLoginAttemptByEmail(email, projectId)
     if (!attempt) return next()
 
     if (attempt.isBlocked && attempt.blockedUntil) {
@@ -25,9 +27,7 @@ export const checkLoginAttempts = async (req, res, next) => {
 
       if (now < blockedUntil) {
         const minutesLeft = Math.ceil((blockedUntil - now) / 60000)
-        return res.status(429).json(
-          errorResponse(`Account is temporarily locked. Try again in ${minutesLeft} minute(s).`)
-        )
+        return errorResponse(res, `Account is temporarily locked. Try again in ${minutesLeft} minute(s).`, 429)
       }
     }
 
