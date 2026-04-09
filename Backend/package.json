@@ -1,7 +1,7 @@
 {
-  "name": "secureauth-backend",
+  "name": "maxauth-backend",
   "version": "1.0.0",
-  "description": "SecureAuth — Auth-as-a-Service backend with NIST SP 800-63B compliance",
+  "description": "MaxAuth — Open source multi-tenant authentication platform",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -19,7 +19,6 @@
     "helmet": "^7.1.0",
     "joi": "^17.13.1",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.13",
     "resend": "^6.4.2",
     "ua-parser-js": "^1.0.38"
   },
